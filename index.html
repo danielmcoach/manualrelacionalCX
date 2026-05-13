@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap Gamificado: Experiencia al Cliente - Comfamiliar Huila</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf para generación de PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#004A98',
+                            orange: '#FF6B00',
+                            light: '#F3F4F6',
+                            dark: '#1F2937'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f8fafc; }
+        
+        /* Timeline Line */
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0; left: 24px;
+            width: 4px;
+            background: #cbd5e1;
+            z-index: 0;
+            border-radius: 2px;
+        }
+        @media (min-width: 768px) {
+            .timeline-container::before {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+        
+        .modal-enter { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse-glow {
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(255, 107, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 107, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 107, 0, 0); }
+        }
+        
+        .shake-animation {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Contenedor del PDF */
+        #pdf-export-wrapper {
+            position: fixed;
+            top: 0;
+            left: -9999px;
+            z-index: -1;
+        }
+
+        #pdf-export-container {
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            width: 680px !important; 
+            max-width: 680px !important;
+            box-sizing: border-box;
+            padding: 30px;
+            background: white;
+            margin: 0;
+        }
+
+        /* Animación pop-in */
+        .pop-in {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Estilos Post-its */
+        .post-it {
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+        .post-it:focus {
+            transform: scale(1.02);
+            outline: none;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-40 border-b-4 border-brand-orange">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
+                <div class="bg-gradient-to-br from-brand-blue to-blue-800 text-white p-3 rounded-xl shadow-inner shrink-0">
+                    <i class="fa-solid fa-users-gear text-2xl"></i>
+                </div>
+                <div class="text-center md:text-left border-l-2 border-transparent md:border-slate-200 pl-0 md:pl-4">
+                    <h1 class="text-xl md:text-2xl font-black text-brand-blue uppercase tracking-tight">Manual Relacional del Servicio</h1>
+                    <p class="text-xs md:text-sm font-semibold text-slate-500">Habilidades Blandas • Experiencia al Cliente Comfamiliar</p>
+                </div>
+            </div>
+            
+            <div class="bg-slate-50 border border-slate-200 p-2 rounded-lg flex items-center gap-3 w-full md:w-auto shadow-sm">
+                <i class="fa-solid fa-users text-brand-orange ml-2"></i>
+                <input type="text" id="team-name" placeholder="Escribe el nombre del Equipo (Opcional)..." class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 placeholder-slate-400 w-full md:w-64 outline-none" onchange="saveTeamName()">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-5xl mx-auto px-4 py-6 md:py-8 w-full">
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 mb-8 md:mb-10 text-center relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fa-solid fa-road text-8xl text-brand-blue"></i></div>
+            <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2 relative z-10">¡Misión: Construir nuestro Manual Relacional del Servicio! 🚀</h2>
+            <p class="text-sm md:text-base text-slate-600 max-w-3xl mx-auto relative z-10">Naveguen por la hoja de ruta de las 6 sesiones. El facilitador les dará un PIN para abrir cada módulo. Al completar su entregable y guardarlo, desbloquearán un Reto Dinámico para su equipo.</p>
+            
+            <div class="mt-6 max-w-xl mx-auto relative z-10">
+                <div class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                    <span id="progress-text-label">Capítulos Completados (PDFs)</span>
+                    <span id="progress-text">0/6 Capítulos</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-3 border border-slate-200 overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-brand-orange to-yellow-400 h-full transition-all duration-700 ease-out" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="timeline" class="timeline-container space-y-8 md:space-y-10 relative">
+            <!-- JavaScript inyecta la línea de tiempo aquí -->
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto py-6 z-10 relative">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4 mx-auto md:mx-0">
+                <span class="font-black text-slate-800 text-lg tracking-tight">Habilidades Blandas y Ética Laboral en el Servicio</span>
+            </div>
+            <div class="text-center md:text-right text-sm text-slate-500 font-medium mt-4 md:mt-0">
+                Roadmap interactivo para Comfamiliar Huila<br>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: PIN -->
+    <div id="pin-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col modal-enter relative overflow-hidden text-center">
+            <div class="bg-slate-800 p-6 text-white">
+                <i class="fa-solid fa-lock text-4xl mb-2 text-brand-orange"></i>
+                <h3 class="text-xl font-bold">Sesión Bloqueada</h3>
+            </div>
+            <div class="p-6 bg-slate-50">
+                <p class="text-sm text-slate-600 mb-4 font-medium">Ingresa el PIN de 4 dígitos para acceder a esta sesión:</p>
+                <input type="password" id="pin-input" maxlength="4" pattern="\d*" class="w-full text-center text-4xl font-black tracking-[0.5em] p-4 rounded-xl border-2 border-slate-300 shadow-inner focus:border-brand-blue focus:ring-0 outline-none transition-colors bg-white text-slate-800" placeholder="••••">
+                <p id="pin-error" class="text-red-500 text-xs font-bold mt-2 hidden">¡Clave incorrecta! Intenta de nuevo.</p>
+            </div>
+            <div class="p-4 bg-white border-t border-slate-200 flex gap-2">
+                <button onclick="closePinModal()" class="flex-1 px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+                <button onclick="verifyPin()" class="flex-1 px-4 py-3 text-sm font-bold text-white bg-brand-orange hover:bg-orange-600 rounded-lg shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-key"></i> Desbloquear
+                </button>
+            </div>
+            <input type="hidden" id="pin-modal-session-id">
+        </div>
+    </div>
+
+    <!-- MODAL 2: INTERFAZ DE TRABAJO -->
+    <div id="modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 md:p-6 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col modal-enter relative my-auto max-h-[95vh] md:max-h-[90vh]">
+            
+            <div class="bg-gradient-to-r from-brand-blue to-blue-800 p-4 md:p-6 text-white rounded-t-2xl flex justify-between items-start shrink-0">
+                <div>
+                    <span id="modal-eje" class="text-[10px] md:text-xs font-bold bg-white/20 px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block"></span>
+                    <h3 id="modal-title" class="text-xl md:text-3xl font-black leading-tight"></h3>
+                </div>
+                <button onclick="closeModal()" class="text-white/60 hover:text-white bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition shrink-0">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-4 md:p-8 overflow-y-auto bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 h-full" id="modal-body-scroll">
+                
+                <!-- Columna Izquierda -->
+                <div class="space-y-4 md:space-y-6">
+                    <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-l-4 border-l-brand-orange">
+                        <h4 class="text-xs md:text-sm font-black text-slate-800 uppercase flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-bullseye text-brand-orange"></i> 1. Fundamento Teórico
+                        </h4>
+                        <p id="modal-proposito" class="text-slate-600 text-sm leading-relaxed"></p>
+                    </div>
+                    <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200">
+                        <h4 class="text-xs md:text-sm font-black text-slate-800 uppercase flex items-center gap-2 mb-3">
+                            <i class="fa-solid fa-list-check text-brand-blue"></i> 2. Pasos para el Manual
+                        </h4>
+                        <ul id="modal-pasos" class="space-y-3 text-sm text-slate-600 list-disc list-inside">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha -->
+                <div class="bg-white p-4 md:p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col h-full min-h-[350px]">
+                    
+                    <!-- Contenedor Dinámica Sorpresa -->
+                    <div id="dynamic-container"></div>
+
+                    <h4 class="text-xs md:text-sm font-black text-slate-800 uppercase flex items-center gap-2 mb-3 mt-2">
+                        <i class="fa-solid fa-pen-to-square text-green-600"></i> 3. Redacten su Entregable
+                    </h4>
+                    <p class="text-xs text-slate-500 mb-4 font-semibold text-brand-blue" id="modal-entregable-title"></p>
+                    
+                    <!-- MAPA DE EMPATÍA -->
+                    <div id="empathy-map-container" class="hidden flex-col w-full h-full gap-2">
+                        <div class="grid grid-cols-2 gap-2 flex-grow">
+                            <div class="flex flex-col">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase text-center mb-1"><i class="fa-solid fa-ear-listen text-brand-orange"></i> Escucha</span>
+                                <textarea id="em-escucha" class="post-it flex-grow w-full bg-[#bbf7d0] p-2 rounded text-xs text-slate-700 border border-slate-200 resize-none" placeholder="¿Qué escucha en su entorno?"></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase text-center mb-1"><i class="fa-solid fa-eye text-brand-orange"></i> Ve</span>
+                                <textarea id="em-ve" class="post-it flex-grow w-full bg-[#bfdbfe] p-2 rounded text-xs text-slate-700 border border-slate-200 resize-none" placeholder="¿Qué ve en la sucursal?"></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase text-center mb-1"><i class="fa-solid fa-person-walking text-brand-orange"></i> Dice y Hace</span>
+                                <textarea id="em-dice" class="post-it flex-grow w-full bg-[#fef08a] p-2 rounded text-xs text-slate-700 border border-slate-200 resize-none" placeholder="Actitud y comportamiento..."></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase text-center mb-1"><i class="fa-solid fa-brain text-brand-orange"></i> Piensa y Siente</span>
+                                <textarea id="em-piensa" class="post-it flex-grow w-full bg-[#e9d5ff] p-2 rounded text-xs text-slate-700 border border-slate-200 resize-none" placeholder="Lo que le importa..."></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase text-center mb-1"><i class="fa-solid fa-cloud-rain text-brand-orange"></i> Dolores</span>
+                                <textarea id="em-dolores" class="post-it flex-grow w-full bg-[#fecaca] p-2 rounded text-xs text-slate-700 border border-slate-200 resize-none" placeholder="Frustraciones y miedos..."></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase text-center mb-1"><i class="fa-solid fa-sun text-brand-orange"></i> Ganancias</span>
+                                <textarea id="em-ganancias" class="post-it flex-grow w-full bg-[#fed7aa] p-2 rounded text-xs text-slate-700 border border-slate-200 resize-none" placeholder="Deseos y necesidades..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TEXTAREA NORMAL -->
+                    <textarea id="modal-textarea" class="w-full flex-grow rounded-lg border-slate-300 shadow-inner bg-slate-50 focus:bg-white focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 p-3 md:p-4 text-sm md:text-base text-slate-700 resize-none transition-colors border" placeholder="Escriban aquí los acuerdos, estrategias y protocolos definidos en equipo..."></textarea>
+                </div>
+            </div>
+
+            <div class="p-4 md:p-5 bg-white rounded-b-2xl border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3 shrink-0">
+                <button onclick="downloadSessionPDF()" id="btn-download-pdf" class="w-full md:w-auto px-5 py-3 md:py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition flex items-center justify-center gap-2 order-2 md:order-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-file-pdf"></i> Descargar PDF de la Sesión
+                </button>
+
+                <div class="flex gap-2 md:gap-3 w-full md:w-auto order-1 md:order-2">
+                    <button onclick="closeModal()" class="w-1/3 md:w-auto px-4 py-3 md:py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg transition text-center">Cerrar</button>
+                    <button onclick="saveDeliverable()" id="btn-save-avance" class="w-2/3 md:w-auto px-5 py-3 md:py-2.5 text-sm font-bold text-white bg-brand-orange hover:bg-orange-600 shadow-md hover:shadow-lg rounded-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-lock-open"></i> Guardar y Ver Reto
+                    </button>
+                </div>
+            </div>
+            
+            <input type="hidden" id="modal-session-id-main">
+        </div>
+    </div>
+
+    <!-- Contenedor del PDF Oculto -->
+    <div id="pdf-export-wrapper">
+        <div id="pdf-export-container">
+            <div style="border-bottom: 3px solid #004A98; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 style="color: #004A98; font-size: 24px; margin: 0; text-transform: uppercase;">Manual Relacional del Servicio</h1>
+                    <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">Área de Experiencia al Cliente - Comfamiliar Huila</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="color: #FF6B00; font-weight: bold; margin: 0;">Equipo: <span id="pdf-team-name"></span></p>
+                    <p style="color: #999; font-size: 12px; margin: 5px 0 0 0;">Fecha: <span id="pdf-date"></span></p>
+                </div>
+            </div>
+            <div style="margin-bottom: 30px;">
+                <span id="pdf-eje" style="background: #eee; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; color: #555; text-transform: uppercase;"></span>
+                <h2 id="pdf-title" style="color: #333; font-size: 20px; margin: 15px 0 5px 0;"></h2>
+                <h3 style="color: #FF6B00; font-size: 14px; margin: 0 0 20px 0; font-style: italic;" id="pdf-entregable-title"></h3>
+            </div>
+            
+            <!-- Contenedor general del desarrollo -->
+            <div style="background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                <h4 style="color: #004A98; margin-top: 0; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Desarrollo del Entregable</h4>
+                <!-- Área inyectada de PDF -->
+                <div id="pdf-content" style="color: #444; font-size: 14px; line-height: 1.6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;"></div>
+            </div>
+
+            <div style="margin-top: 50px; text-align: center; color: #aaa; font-size: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                <strong style="color: #333; font-size: 12px; display: block; margin-bottom: 5px;">Habilidades Blandas y Ética Laboral en el Servicio</strong>
+                Documento generado a través del Roadmap Interactivo Comfamiliar Huila<br>
+                <a href="https://www.danielmcoach.com" target="_blank" style="color: #004A98; text-decoration: none; font-weight: bold; font-size: 11px; margin-top: 4px; display: inline-block;">www.danielmcoach.com</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3"></div>
+
+    <script>
+        const sessionsData = [
+            { 
+                id: 1, pin: "7492", eje: "Habilidad Blanda 1", icon: "fa-heart", title: "Sesión 1: Empatía (El pilar de la conexión humana)", 
+                proposito: "No se trata de sufrir con el cliente, sino de entender su contexto operativo y emocional. Debemos despersonalizar el ataque y leer el contexto no verbal.", 
+                dinamicas: [
+                    `🤝 RETO DE EQUIPO 'Espejo Mutante Extremo':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Un voluntario (el afiliado) se hace frente al equipo y actúa furioso solo con su postura corporal.</p><p><b>Paso 2:</b> El equipo lo rodea y funciona como un espejo perfecto imitando cada tensión de su cara y cuerpo.</p><p><b>Paso 3:</b> ¡El Desafío! El voluntario debe cambiar de emoción bruscamente cada 5 segundos (de furia a llanto, de llanto a alegría, de alegría a confusión). El equipo debe adaptarse <b>al instante</b> sin hablar.</p><p><b>Paso 4:</b> Si alguien del equipo se ríe, habla, o tarda más de 2 segundos en imitar la nueva emoción, pierden.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Historia a 5 voces Contra el Reloj':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Pónganse en círculo. Construirán una historia de una excelente atención aportando <b>una sola palabra por persona</b>.</p><p><b>Paso 2:</b> ¡El Desafío! Todo el equipo debe mantener un ritmo constante dando una palmada en sus piernas cada 1 segundo (Tick-Tock-Tick-Tock).</p><p><b>Paso 3:</b> Cada palabra debe decirse exactamente en el golpe de la palmada. Ni antes ni después.</p><p><b>Paso 4:</b> Si alguien pierde el ritmo del aplauso, se traba, o dice dos palabras, inician desde cero. Meta: 30 palabras seguidas perfectas.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Campo Minado a Ciegas':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Un voluntario cierra los ojos. El resto del equipo forma un laberinto irregular entrelazando sus brazos y piernas en el centro del salón.</p><p><b>Paso 2:</b> El objetivo es que el ciego cruce el laberinto sin tocar a nadie.</p><p><b>Paso 3:</b> ¡El Desafío! Tienen <b>prohibido hablar o tocar al voluntario</b>. Solo pueden guiarlo usando dos códigos sonoros: un chasquido de dedos significa "gira a la derecha", un silbido o soplido significa "avanza un paso".</p><p><b>Paso 4:</b> Si el voluntario choca contra el "laberinto", se reconfiguran y vuelven a empezar.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Estatua de Transición Lenta':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Tienen 10 segundos para armar físicamente, todos conectados, la estatua del "Peor servicio posible". Quédense congelados.</p><p><b>Paso 2:</b> ¡El Desafío! El facilitador cuenta 10 segundos en reversa. En ese tiempo, TODA la estatua debe mutar en <b>cámara ultra-lenta</b> (como Matrix) hacia la pose del "Mejor servicio del mundo".</p><p><b>Paso 3:</b> Regla de oro: Nadie puede soltarse de sus compañeros en ningún momento durante la transición lenta. Si alguien hace un movimiento brusco, pierden.</p></div>`
+                ],
+                pasos: [
+                    "Identifiquen diferencias clave entre Empatía y Simpatía.", 
+                    "Definan las características emocionales de los afiliados al entrar a la sucursal.", 
+                    "Construyan su Mapa de Empatía completando los cuadrantes en la zona de trabajo."
+                ],
+                entregable: "Mapa de Empatía y Arquetipos del Afiliado Huilense" 
+            },
+            { 
+                id: 2, pin: "3815", eje: "Habilidad Blanda 2", icon: "fa-comments", title: "Sesión 2: Comunicación Asertiva (Claridad sin agresión)", 
+                proposito: "Aprender a aplicar el Modelo DESC, erradicar el 'No se puede' y gestionar el tono de la voz para no poner gasolina en una discusión.", 
+                dinamicas: [
+                    `🤝 RETO DE EQUIPO 'Diccionario Prohibido Nivel Dios':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> En círculo, un integrante lanza una queja. El de la derecha responde solucionando.</p><p><b>Paso 2:</b> ¡El Desafío! Palabras totalmente prohibidas: "No, Pero, Tiene, Culpa, Sistema y YO". (Ni siquiera pueden hablar en primera persona).</p><p><b>Paso 3:</b> Regla Extra: Cada respuesta debe empezar obligatoriamente con <b>la misma letra</b> con la que terminó la frase de queja de su compañero. Agilidad mental extrema.</p><p><b>Paso 4:</b> Quien falle, hace que todo el equipo repita el abecedario al revés del Z a la V.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Disociación de Tonos':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Todos en círculo. Van a contar del 1 al 10 en voz alta (un número por persona).</p><p><b>Paso 2:</b> ¡El Desafío Cerebral! Del 1 al 5, el que habla debe gritar con furia, <b>PERO</b> el resto del equipo que escucha debe hacerle gestos exagerados de calma y sonrisas.</p><p><b>Paso 3:</b> Del 6 al 10 se invierte: el que habla debe susurrar con máxima dulzura, <b>PERO</b> el resto del equipo debe mirarlo con cara de pánico y tensión.</p><p><b>Paso 4:</b> Requiere disociar lo que escuchan de lo que actúan. Si alguien se equivoca de gesto, inician desde 1.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Doble Vínculo Asertivo':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Un asesor en el centro. DOS compañeros actuarán como clientes y lo atacarán al mismo tiempo con problemas diferentes.</p><p><b>Paso 2:</b> El asesor debe usar pausas para responder a ambos sin usar la palabra "No".</p><p><b>Paso 3:</b> ¡El Desafío! Cada 10 segundos, un cuarto compañero grita "¡Cambio!" y toma el lugar del asesor.</p><p><b>Paso 4:</b> El nuevo asesor debe continuar la frase <b>exactamente</b> donde la dejó el anterior, sin perder el hilo de ninguna de las dos quejas.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Código Morse de Empatía':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Todo el equipo hace una fila india y <b>todos cierran los ojos</b> excepto el último.</p><p><b>Paso 2:</b> El último tiene un mensaje: "Comprendo su molestia, lo voy a ayudar".</p><p><b>Paso 3:</b> ¡El Desafío! Tienen prohibido emitir cualquier sonido. Deben pasarse el mensaje tocando la espalda del compañero de enfrente, usando un código que deben inventar en 15 segundos (Ej: 2 toques en hombro derecho = Comprendo. Dibujar círculo = Molestia).</p><p><b>Paso 4:</b> Verifiquen si el de adelante logró deducir el mensaje.</p></div>`
+                ],
+                pasos: [
+                    "Identifiquen y listen las 'Palabras y Frases Prohibidas' que usan actualmente por costumbre o cansancio.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'No se puede', 'Tiene que llamar a la línea', 'Es culpa del sistema'.</span>", 
+                    "Estudien el Modelo DESC (Describir, Expresar, Sugerir, Consecuencias) para entender cómo transformar negativas absolutas en alternativas viables.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: Describir: 'Veo que le falta una firma', Sugerir: 'Si lo firma de una vez, lo radicamos ya mismo'.</span>", 
+                    "Redacten su 'Guion de Respuestas Asertivas': Creen al menos 3 frases de rescate estandarizadas usando el lenguaje propositivo.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: Transformar 'No hay agenda' por 'Lo que sí podemos hacer es programarle la cita para mañana a primera hora'.</span>"
+                ],
+                entregable: "Guion de Respuestas Asertivas" 
+            },
+            { 
+                id: 3, pin: "9264", eje: "Habilidad Blanda 3", icon: "fa-people-carry-box", title: "Sesión 3: Trabajo en Equipo (La cadena de valor del servicio)", 
+                proposito: "Romper los silos. Entender que el cliente ve a 'Comfamiliar', no áreas separadas. Aprender a aplicar la 'Mentalidad de Enjambre'.", 
+                dinamicas: [
+                    `🤝 RETO DE EQUIPO 'Nudo Humano A Ciegas':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Tómense de las manos de forma cruzada en un círculo cerrado creando un nudo.</p><p><b>Paso 2:</b> ¡El Desafío! Ahora, <b>TODOS cierran los ojos</b> y no pueden abrirlos bajo ninguna circunstancia.</p><p><b>Paso 3:</b> Deben desenredarse para quedar en círculo perfecto usando exclusivamente sus voces para guiar el movimiento de los compañeros ("Pasa por debajo de mi brazo derecho").</p><p><b>Paso 4:</b> Si alguien abre los ojos o se sueltan las manos, fallan.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'La Máquina Reversible':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Armen la máquina humana. Uno empieza un movimiento/sonido constante y los demás se conectan físicamente añadiendo el suyo. Todos sincronizados.</p><p><b>Paso 2:</b> ¡El Desafío! De repente, el facilitador o un observador gritará "¡Fallo en el sistema!".</p><p><b>Paso 3:</b> Inmediatamente, la máquina entera debe empezar a operar en "reversa". Si alguien movía el brazo arriba-abajo, ahora lo mueve abajo-arriba, y los sonidos deben sonar al revés o invertidos.</p><p><b>Paso 4:</b> Deben mantener la reversa sin perder la conexión física por 15 segundos.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Sincronía Ninja de 30':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Todos cierran los ojos e intentan contar del 1 al 30 al azar. (Si dos hablan al tiempo, vuelven a 1).</p><p><b>Paso 2:</b> ¡El Desafío! Reglas Ninja: Los números pares deben decirse susurrando. Los impares en voz normal.</p><p><b>Paso 3:</b> Cada vez que lleguen a un múltiplo de 5 (5, 10, 15, 20...), ese número NO se dice en voz alta; en su lugar, todo el equipo completo debe dar un aplauso exacto y al unísono.</p><p><b>Paso 4:</b> Si falla el aplauso grupal o alguien dice el número en voz alta, vuelven a cero.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Soporte Estructural Extremo':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Armen el Círculo de Confianza (rodillas flexionadas sentados sobre las piernas del compañero de atrás sin usar las manos).</p><p><b>Paso 2:</b> ¡El Desafío! Una vez estén estables, todos deben estirar sus dos brazos hacia arriba, simulando sostener el techo.</p><p><b>Paso 3:</b> A la cuenta de tres, todos deben estirar la pierna derecha hacia el frente. El equipo debe compensar el peso colectivamente para no derrumbarse.</p><p><b>Paso 4:</b> Si logran sostenerse 5 segundos así, ganan.</p></div>`
+                ],
+                pasos: [
+                    "Debatan sobre los 'cuellos de botella' actuales: ¿Qué documento suele faltar cuando se pasan casos de un área a otra, generando demoras?<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Aportes nos devuelve las carpetas porque a veces se nos olvida la copia de la cédula al 150%'.</span>", 
+                    "Definan cómo debe ser la entrega perfecta y responsable de un proceso al compañero de la siguiente área para evitar reprocesos.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Acuerdo: Ningún asesor pasará una solicitud sin haber verificado la lista de chequeo de 3 pasos'.</span>", 
+                    "Construyan la 'Matriz de Acuerdos Internos': Escriban paso a paso cómo derivarán casos complejos para erradicar los trámites estancados.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Si el sistema falla, el paso 1 es avisar a TI, el paso 2 es informar a los usuarios con empatía en la sala'.</span>"
+                ],
+                entregable: "Matriz de Acuerdos Internos y Derivación de Casos" 
+            },
+            { 
+                id: 4, pin: "5187", eje: "Habilidad Blanda 4", icon: "fa-handshake-angle", title: "Sesión 4: Resolución de Conflictos (Desescalamiento en caliente)", 
+                proposito: "Entender el Secuestro de la Amígdala y evitar jugar el Triángulo de Karpman (Víctima/Salvador). Aplicar la Técnica de Pausa Estratégica.", 
+                dinamicas: [
+                    `🤝 RETO DE EQUIPO 'Desactivación Cuántica':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> El cliente furioso al centro. Los 4 compañeros deben turnarse (1 por 1) para lanzar una frase de calma y desarmarlo.</p><p><b>Paso 2:</b> ¡El Desafío! Cada integrante debe usar una técnica *diferente* obligatoriamente.</p><p><b>Paso 3:</b> Integrante 1: Debe validar la emoción. Integrante 2: Debe usar solo postura corporal de empatía. Integrante 3: Debe hablar en un susurro extremo. Integrante 4: Debe decir lo que SÍ puede hacer (DESC).</p><p><b>Paso 4:</b> Si alguien repite técnica o demora más de 3 segundos, la bomba estalla.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Abogado del Diablo Contrarreloj':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Petición absurda planteada ("Quiero que vengan a mi casa a hacerme el trámite").</p><p><b>Paso 2:</b> ¡El Desafío! Se rotan el turno en círculo como una papa caliente. Tienen solo <b>3 segundos</b> cada uno para dar un argumento empático defendiendo el porqué el cliente siente que merece eso.</p><p><b>Paso 3:</b> Prohibido repetir argumentos o darle la razón legalmente.</p><p><b>Paso 4:</b> Si alguien hace "eeeeh...", repite argumento, o pasan los 3 segundos, quedan eliminados de la ronda. Deben dar 3 vueltas completas al círculo sin fallar.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Esquizofrenia de Semáforos':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Hacen una fila. El primero (Cliente Rojo) ataca al segundo (Asesor Verde), quien debe responder con total asertividad y calma.</p><p><b>Paso 2:</b> ¡El Desafío! Inmediatamente después de dar su respuesta calmada, el segundo debe voltearse hacia el tercero, cambiar drásticamente su actitud a "Cliente Rojo" furioso y atacarlo.</p><p><b>Paso 3:</b> El tercero responde en Verde y luego se voltea para atacar en Rojo al cuarto. Cambio radical de emociones en 1 segundo por persona.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Coro de la Confusión Secuencial':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Tres clientes gritan al mismo tiempo quejas totalmente distintas a un solo asesor.</p><p><b>Paso 2:</b> ¡El Desafío! El asesor no solo debe callarlos con lenguaje no verbal, sino que luego debe responderles en orden secuencial demostrando que los escuchó a los tres bajo presión.</p><p><b>Paso 3:</b> "A usted señora, le respondo X. A usted señor, le digo Y. Y a usted joven, le aclaro Z." Todo esto manteniendo el tono más calmado de su vida.</p></div>`
+                ],
+                pasos: [
+                    "Clasifiquen las actitudes de los afiliados en un 'Semáforo de Conflictos': Verde (Tranquilo), Amarillo (Ansioso o elevando la voz) y Rojo (Agresivo).<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Alerta Amarilla: El cliente golpea la mesa con los dedos. Acción: Mantener contacto visual y bajar nuestro volumen'.</span>", 
+                    "Establezcan las reglas de la 'Técnica de Pausa Estratégica': Definan cómo y con qué código pedir el relevo a un compañero antes de perder el control.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Seña de relevo: Tocar el teclado dos veces seguidas. El compañero se acerca e interviene amablemente'.</span>", 
+                    "Redacten el protocolo exacto de actuación y desescalamiento para cuando un usuario entra en estado 'Rojo' en la sala de espera.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Paso 1: Aislar al usuario del ruido general. Paso 2: Escucha activa sin interrumpir. Paso 3: Validar su molestia'.</span>"
+                ],
+                entregable: "Protocolo de Semáforo de Conflictos" 
+            },
+            { 
+                id: 5, pin: "2639", eje: "Cultura y Valores", icon: "fa-scale-balanced", title: "Sesión 5: Ética Laboral (La integridad como escudo)", 
+                proposito: "Diferenciar entre legalidad e integridad. Entender el impacto de saltarse la fila por un 'conocido' y asegurar la privacidad de datos sensibles.", 
+                dinamicas: [
+                    `🤝 RETO DE EQUIPO 'La Cuerda Floja del Saboteador':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> El facilitador asigna un dilema ético ("Hacerle el favor rápido al amigo").</p><p><b>Paso 2:</b> ¡El Desafío! El facilitador toca la espalda de un integrante en secreto. Ese será el "Saboteador Tóxico". Su misión secreta es usar argumentos muy persuasivos y venenosos ("Si no lo haces tú, igual otro lo hará") para arrastrar a los demás a su lado.</p><p><b>Paso 3:</b> El equipo debe detectar la toxicidad, rebatirla con firmeza ética innegociable y convencer al saboteador de que cruce hacia el lado correcto.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Escudo Humano Ciego':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> El "Escudo de la Integridad" se para en el centro y cierra los ojos.</p><p><b>Paso 2:</b> ¡El Desafío! Los demás integrantes giran a su alrededor silenciosamente. De repente, alguien se detiene y le susurra al oído un intento de soborno o chantaje emocional.</p><p><b>Paso 3:</b> El del centro debe girar hacia donde cree que escuchó la voz y lanzar un argumento de integridad tajante y directo. Debe soportar 4 "ataques" desde diferentes ángulos sin dudar ni titubear un segundo.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Secreto a Voces Interrumpido':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Hagan una fila y empiecen a pasarse al oído un dilema ético justificándolo y luego refutándolo en el siguiente eslabón.</p><p><b>Paso 2:</b> ¡El Desafío! En cualquier momento al azar, el facilitador dará una palmada fuerte. </p><p><b>Paso 3:</b> Inmediatamente, la cadena de comunicación debe invertirse. Quien estaba defendiendo la ética ahora será tentado en reversa por el que estaba atrás. Agilidad moral bajo estrés máximo.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Juicio Rápido Sin Filtro':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Divídanse en fiscales que atacan una falta de la oficina y defensores que la justifican.</p><p><b>Paso 2:</b> ¡El Desafío! Regla de Oro estricta: Durante todo el debate tienen PROHIBIDO pronunciar las palabras: "Ética", "Valores", "Moral", "Reglas" o "Legal".</p><p><b>Paso 3:</b> Para ganar, deben convencer al oponente argumentando puramente desde el "impacto humano real", las consecuencias dolorosas para las personas o la destrucción de la confianza. 10 segundos por turno.</p></div>`
+                ],
+                pasos: [
+                    "Analicen la 'Delgada Línea del Favor': Discutan por qué saltarse un proceso por un 'conocido' o directivo vulnera la integridad del servicio.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Si pasamos al primo de alguien rápido, los 20 usuarios que llevan horas al sol pierden la confianza en Comfamiliar'.</span>", 
+                    "Acuerden lineamientos estrictos y obligatorios para proteger la privacidad, documentos y datos sensibles de las familias del Huila.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Regla: Nunca dejar pantallas desbloqueadas con historias clínicas o estados de cuenta a la vista del público'.</span>", 
+                    "Redacten el 'Decálogo Ético': Escriban principios innegociables que regirán el comportamiento moral y transparente de todo el equipo.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Principio #1: En nuestra ventanilla todos los afiliados son VIP, no hay filas VIP no oficiales'.</span>"
+                ],
+                entregable: "Decálogo Ético de Servicio Comfamiliar" 
+            },
+            { 
+                id: 6, pin: "8051", eje: "Cultura y Valores", icon: "fa-flag-checkered", title: "Sesión 6: Consolidación (El simulacro final)", 
+                proposito: "Aplicar el Ciclo de Mejora Continua (Kaizen). Entender el impacto a largo plazo de las habilidades blandas para no llevarse el estrés a la casa.", 
+                dinamicas: [
+                    `🤝 RETO DE EQUIPO 'Escudo de la Tribu Sincronizado':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Pónganse de pie abrazados en círculo. Miren a los ojos del compañero de la derecha para decirle su mayor fortaleza en servicio.</p><p><b>Paso 2:</b> ¡El Desafío! Quien recibe el halago está obligado a responder en voz alta: "Y lo pongo al servicio del equipo".</p><p><b>Paso 3:</b> Inmediatamente, debe girarse a su derecha para dar el siguiente halago. La comunicación debe viajar como una ola perfecta sin tartamudear ni frenarse. Si la ola se rompe, se reinicia.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Escultura en Gravedad Cero':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Tienen 30 segundos para armar en silencio la estatua humana de "Sinergia Total".</p><p><b>Paso 2:</b> ¡El Desafío! Para que la estatua sea válida, al menos <b>dos personas del equipo NO pueden tener sus pies tocando el piso</b> (deben estar sostenidos, apoyados, a caballito o colgando del resto del equipo).</p><p><b>Paso 3:</b> Requiere confianza extrema. Deben mantener esta postura desafiante durante 10 segundos exactos sin tambalear ni hablar.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'Mega-Simulacro a Ciegas':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Repartan los roles: Un cliente furioso, un asesor, y un "jefe de apoyo" al rescate. Activen un minuto en el reloj.</p><p><b>Paso 2:</b> ¡El Desafío! <b>EL ASESOR ESTÁ CIEGO</b> (ojos cerrados fuertemente). El cliente lo ataca verbalmente moviéndose alrededor de él.</p><p><b>Paso 3:</b> El asesor debe desescalar la crisis guiándose <b>únicamente</b> por las instrucciones verbales de apoyo que le va diciendo su compañero al oído (Ej: "Aplica técnica DESC ahora", "Mantén el tono bajo", "Gira a tu izquierda"). Deben lograr la paz antes de los 60 seg.</p></div>`,
+                    `🤝 RETO DE EQUIPO 'El Latido Complejo':<div class="mt-2 font-normal text-sm text-slate-700 space-y-2 border-t border-orange-200 pt-2"><p><b>Paso 1:</b> Pónganse en círculo y cierren los ojos. Total silencio.</p><p><b>Paso 2:</b> ¡El Desafío! Tienen que lograr dar TRES aplausos grupales perfectos (todos juntos como un solo sonido) pero cumpliendo esta secuencia mental:</p><p><b>Paso 3:</b> Dar el 1er aplauso. Sentir mentalmente <b>2 segundos exactos</b> y dar el 2do aplauso. Sentir mentalmente <b>4 segundos exactos</b> y dar el 3er aplauso.</p><p><b>Paso 4:</b> Nadie puede llevar la cuenta en voz alta ni mover la cabeza. Es pura telepatía de equipo. Si alguien se adelanta o se atrasa, desde cero.</p></div>`
+                ],
+                pasos: [
+                    "Hagan una revisión integral de los 5 entregables anteriores (Mapa de Empatía, Guiones, Matrices y Protocolos) asegurándose de que son realistas.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Verifiquen si el Guion Asertivo de la sesión 2 es fácil de recordar cuando la sala de espera está totalmente llena'.</span>", 
+                    "Diseñen un plan de 'Mejora Continua' (Kaizen): Definan cada cuánto tiempo revisarán este manual como equipo para actualizarlo.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Acordamos que el último viernes de cada mes tendremos una reunión de 15 minutos para sumar nuevas frases de rescate'.</span>", 
+                    "Redacten un párrafo final de compromiso grupal y dejen un espacio para que todos los integrantes del equipo 'firmen' sus acuerdos.<br><span class='text-xs text-brand-blue font-semibold bg-blue-50 border border-blue-100 px-2 py-1 rounded mt-1.5 mb-1 inline-block'><i class='fa-solid fa-lightbulb text-yellow-500 mr-1'></i>Ejemplo: 'Nos comprometemos a proteger este manual y usarlo como nuestro escudo. Firma: El Equipo Dinamita'.</span>"
+                ],
+                entregable: "Ensamblaje final del Manual y Firma de Acuerdos" 
+            }
+        ];
+
+        let appState = JSON.parse(localStorage.getItem('comfamiliarServicioCliente')) || {
+            teamName: '',
+            deliverables: {},
+            empathyMapData: {}, 
+            pdfsDownloaded: {},
+            unlockedSessions: {}, 
+            assignedDynamics: {}
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!appState.unlockedSessions) appState.unlockedSessions = {};
+            if (!appState.pdfsDownloaded) appState.pdfsDownloaded = {}; 
+            if (!appState.assignedDynamics) appState.assignedDynamics = {};
+            if (!appState.empathyMapData) appState.empathyMapData = {};
+            
+            if(appState.teamName) document.getElementById('team-name').value = appState.teamName;
+            renderTimeline();
+            updateProgress();
+
+            ['em-escucha', 'em-ve', 'em-dice', 'em-piensa', 'em-dolores', 'em-ganancias'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateUIState);
+            });
+            document.getElementById('modal-textarea').addEventListener('input', updateUIState);
+        });
+
+        function showToast(title, text) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-slate-800 text-white p-4 rounded-xl shadow-2xl transform transition-all duration-500 translate-y-20 opacity-0 flex flex-col gap-1 w-80 border-l-4 border-brand-orange';
+            toast.innerHTML = `<strong class="text-brand-orange text-lg flex items-center gap-2"><i class="fa-solid fa-bell"></i> ${title}</strong><p class="text-sm font-medium">${text}</p>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('translate-y-20', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+
+        function saveTeamName() {
+            appState.teamName = document.getElementById('team-name').value;
+            localStorage.setItem('comfamiliarServicioCliente', JSON.stringify(appState));
+        }
+
+        function renderTimeline() {
+            const timelineEl = document.getElementById('timeline');
+            timelineEl.innerHTML = '';
+            
+            sessionsData.forEach((session, index) => {
+                let isCompleted = false;
+                let previewText = "";
+                
+                if (session.id === 1) {
+                    const em = appState.empathyMapData;
+                    if (em && (em.escucha || em.ve || em.dice || em.piensa || em.dolores || em.ganancias)) {
+                        isCompleted = true;
+                        previewText = "✔️ Mapa de Empatía guardado correctamente en la caja fuerte.";
+                    }
+                } else {
+                    if (appState.deliverables[session.id]) {
+                        isCompleted = true;
+                        previewText = appState.deliverables[session.id];
+                    }
+                }
+
+                const isDownloaded = !!appState.pdfsDownloaded[session.id];
+                const isLocked = !appState.unlockedSessions[session.id]; 
+                
+                let themeColor = 'blue';
+                let iconStyles = isDownloaded ? 'bg-green-500 text-white border-green-200' 
+                               : (isLocked ? 'bg-slate-200 text-slate-400 border-slate-100' 
+                               : `bg-brand-${themeColor} text-white border-white pulse-glow shadow-md cursor-pointer`);
+                
+                let cardStyles = isLocked ? 'opacity-60 bg-slate-50 cursor-pointer hover:bg-slate-100 border-l-4 border-slate-300 transition-all' 
+                               : 'opacity-100 bg-white hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer border-l-4';
+                
+                let borderColor = isDownloaded ? 'border-green-500' : (isLocked ? 'border-slate-300' : `border-brand-${themeColor}`);
+
+                const isEven = index % 2 === 0;
+
+                let previewHTML = '';
+                if (isCompleted && previewText) {
+                    previewHTML = `
+                        <div class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 text-sm italic relative">
+                            <i class="fa-solid fa-quote-left absolute text-slate-300 top-2 left-2 text-xl opacity-50"></i>
+                            <span class="relative z-10 line-clamp-3 ml-6 font-semibold">${previewText}</span>
+                        </div>
+                    `;
+                }
+
+                const cardHTML = `
+                    <div class="relative flex items-center justify-between md:justify-normal ${isEven ? 'md:flex-row-reverse' : 'md:flex-row'} group">
+                        <div class="absolute left-0 md:left-1/2 transform md:-translate-x-1/2 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-4 ${iconStyles} z-10 transition-all"
+                             ${isLocked ? `onclick="openPinModal(${session.id})"` : `onclick="openModal(${session.id})"`}>
+                            ${isDownloaded ? '<i class="fa-solid fa-check"></i>' : (isLocked ? '<i class="fa-solid fa-lock text-sm md:text-base"></i>' : `<i class="fa-solid ${session.icon} text-sm md:text-base"></i>`)}
+                        </div>
+                        <div class="w-full md:w-[45%] ml-14 md:ml-0 pl-0 md:px-4" ${isLocked ? `onclick="openPinModal(${session.id})"` : `onclick="openModal(${session.id})"`}>
+                            <div class="p-4 md:p-5 rounded-xl shadow-sm ${cardStyles} ${borderColor}">
+                                <div class="flex justify-between items-start mb-2 flex-wrap gap-2">
+                                    <span class="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-wider">${session.eje}</span>
+                                    ${isDownloaded ? '<span class="text-[10px] md:text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold uppercase"><i class="fa-solid fa-file-pdf mr-1"></i> Capítulo Listo</span>' : (isCompleted ? '<span class="text-[10px] md:text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold uppercase"><i class="fa-solid fa-save mr-1"></i> Guardado</span>' : '')}
+                                </div>
+                                <h3 class="text-base md:text-lg font-bold text-slate-800 mb-2">${session.title}</h3>
+                                <p class="text-xs md:text-sm text-slate-600 line-clamp-2">${session.proposito}</p>
+                                ${previewHTML}
+                                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs md:text-sm font-bold ${isLocked ? 'text-slate-400' : (isDownloaded ? 'text-green-600' : 'text-brand-orange')}">
+                                    ${isLocked ? '<i class="fa-solid fa-key"></i> Requiere PIN del facilitador' : `<i class="fa-solid fa-file-pdf"></i> ${session.entregable}`}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                timelineEl.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        function updateProgress() {
+            const downloadedCount = Object.keys(appState.pdfsDownloaded).length;
+            const percentage = (downloadedCount / sessionsData.length) * 100;
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+            document.getElementById('progress-text').innerText = `${downloadedCount}/${sessionsData.length} Capítulos`;
+        }
+
+        // --- LÓGICA DE PIN ---
+        function openPinModal(id) {
+            document.getElementById('pin-modal-session-id').value = id;
+            document.getElementById('pin-input').value = '';
+            document.getElementById('pin-error').classList.add('hidden');
+            document.getElementById('pin-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('pin-input').focus(), 100);
+        }
+
+        function closePinModal() {
+            document.getElementById('pin-modal').classList.add('hidden');
+        }
+
+        function verifyPin() {
+            const id = parseInt(document.getElementById('pin-modal-session-id').value, 10);
+            const enteredPin = document.getElementById('pin-input').value.trim();
+            const session = sessionsData.find(s => s.id === id);
+
+            if (enteredPin === session.pin) {
+                appState.unlockedSessions[id] = true;
+                localStorage.setItem('comfamiliarServicioCliente', JSON.stringify(appState));
+                closePinModal();
+                renderTimeline();
+                openModal(id); 
+            } else {
+                const errorEl = document.getElementById('pin-error');
+                errorEl.classList.remove('hidden');
+                const inputEl = document.getElementById('pin-input');
+                inputEl.classList.add('shake-animation', 'border-red-500', 'text-red-500');
+                setTimeout(() => {
+                    inputEl.classList.remove('shake-animation', 'border-red-500', 'text-red-500');
+                }, 500);
+            }
+        }
+
+        document.getElementById('pin-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') { verifyPin(); }
+        });
+
+
+        // --- LÓGICA DEL MODAL PRINCIPAL ---
+        function openModal(id) {
+            const session = sessionsData.find(s => s.id === id);
+            if (!session) return;
+
+            document.getElementById('modal-session-id-main').value = session.id;
+            document.getElementById('modal-eje').innerText = session.eje;
+            document.getElementById('modal-title').innerText = session.title;
+            document.getElementById('modal-proposito').innerText = session.proposito;
+            document.getElementById('modal-entregable-title').innerText = `${session.entregable}`;
+            
+            const textarea = document.getElementById('modal-textarea');
+            const empathyMap = document.getElementById('empathy-map-container');
+
+            if (id === 1) {
+                textarea.classList.add('hidden');
+                empathyMap.classList.remove('hidden');
+                empathyMap.classList.add('flex');
+                
+                // Cargar datos
+                const emData = appState.empathyMapData || {};
+                document.getElementById('em-escucha').value = emData.escucha || '';
+                document.getElementById('em-ve').value = emData.ve || '';
+                document.getElementById('em-dice').value = emData.dice || '';
+                document.getElementById('em-piensa').value = emData.piensa || '';
+                document.getElementById('em-dolores').value = emData.dolores || '';
+                document.getElementById('em-ganancias').value = emData.ganancias || '';
+            } else {
+                textarea.classList.remove('hidden');
+                empathyMap.classList.add('hidden');
+                empathyMap.classList.remove('flex');
+                textarea.value = appState.deliverables[session.id] || '';
+            }
+
+            if (appState.assignedDynamics[session.id] === undefined) {
+                appState.assignedDynamics[session.id] = Math.floor(Math.random() * 4);
+                localStorage.setItem('comfamiliarServicioCliente', JSON.stringify(appState));
+            }
+            
+            let isSaved = false;
+            if (id === 1) {
+                const em = appState.empathyMapData;
+                if (em && (em.escucha || em.ve || em.dice || em.piensa || em.dolores || em.ganancias)) isSaved = true;
+            } else {
+                if (appState.deliverables[session.id]) isSaved = true;
+            }
+
+            const dynamicToUse = session.dinamicas[appState.assignedDynamics[session.id]];
+            const ulPasos = document.getElementById('modal-pasos');
+            const dynamicContainer = document.getElementById('dynamic-container');
+            
+            if (isSaved) {
+                dynamicContainer.innerHTML = `
+                    <div id="dynamic-box" class="bg-orange-100 p-5 rounded-xl border-4 border-brand-orange mb-5 shadow-lg">
+                        <strong class="text-brand-orange text-sm md:text-base block uppercase tracking-wide mb-2"><i class="fa-solid fa-gift text-xl"></i> ¡Reto de Equipo Desbloqueado!</strong>
+                        <span class="text-slate-800 text-sm md:text-base font-bold leading-relaxed block bg-white p-3 rounded border border-orange-200">${dynamicToUse}</span>
+                    </div>`;
+            } else {
+                dynamicContainer.innerHTML = `
+                    <div id="dynamic-box" class="bg-slate-100 p-5 rounded-xl border-2 border-dashed border-slate-300 mb-5 text-center shadow-inner">
+                        <strong class="text-slate-500 text-sm md:text-base block"><i class="fa-solid fa-lock mb-3 text-3xl text-slate-400"></i><br>Guarden su avance para desbloquear el reto secreto.</strong>
+                    </div>`;
+            }
+            
+            ulPasos.innerHTML = '';
+            session.pasos.forEach(paso => {
+                const li = document.createElement('li');
+                li.innerHTML = paso; // Cambiado de innerText a innerHTML para permitir los estilos del ejemplo
+                ulPasos.appendChild(li);
+            });
+            
+            updateUIState();
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function updateUIState() {
+            const id = parseInt(document.getElementById('modal-session-id-main').value, 10);
+            const btnPdf = document.getElementById('btn-download-pdf');
+            const btnSave = document.getElementById('btn-save-avance');
+            
+            let hasContent = false;
+            let isSaved = false;
+
+            if (id === 1) {
+                const e = document.getElementById('em-escucha').value.trim();
+                const v = document.getElementById('em-ve').value.trim();
+                const d = document.getElementById('em-dice').value.trim();
+                const p = document.getElementById('em-piensa').value.trim();
+                const dol = document.getElementById('em-dolores').value.trim();
+                const g = document.getElementById('em-ganancias').value.trim();
+                hasContent = (e || v || d || p || dol || g);
+                
+                const em = appState.empathyMapData;
+                if (em && (em.escucha || em.ve || em.dice || em.piensa || em.dolores || em.ganancias)) isSaved = true;
+            } else {
+                hasContent = document.getElementById('modal-textarea').value.trim().length > 0;
+                if (appState.deliverables[id]) isSaved = true;
+            }
+            
+            btnPdf.disabled = !hasContent;
+            
+            if(isSaved) {
+                btnSave.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Actualizar Avance';
+                btnSave.classList.remove('bg-brand-orange', 'hover:bg-orange-600');
+                btnSave.classList.add('bg-brand-blue', 'hover:bg-blue-800');
+            } else {
+                btnSave.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i> Guardar y Ver Reto';
+                btnSave.classList.remove('bg-brand-blue', 'hover:bg-blue-800');
+                btnSave.classList.add('bg-brand-orange', 'hover:bg-orange-600');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        // LOGICA DE GUARDADO
+        function saveDeliverable() {
+            const id = parseInt(document.getElementById('modal-session-id-main').value, 10);
+            let teamName = document.getElementById('team-name').value.trim();
+
+            let wasSaved = false;
+
+            if (id === 1) {
+                const emData = {
+                    escucha: document.getElementById('em-escucha').value.trim(),
+                    ve: document.getElementById('em-ve').value.trim(),
+                    dice: document.getElementById('em-dice').value.trim(),
+                    piensa: document.getElementById('em-piensa').value.trim(),
+                    dolores: document.getElementById('em-dolores').value.trim(),
+                    ganancias: document.getElementById('em-ganancias').value.trim(),
+                };
+
+                if (!emData.escucha && !emData.ve && !emData.dice && !emData.piensa && !emData.dolores && !emData.ganancias) {
+                    showToast("Mapa vacío", "Deben completar al menos un cuadrante del Mapa de Empatía para guardar.");
+                    return;
+                }
+
+                const em = appState.empathyMapData;
+                wasSaved = em && (em.escucha || em.ve || em.dice || em.piensa || em.dolores || em.ganancias);
+                appState.empathyMapData = emData;
+
+            } else {
+                const content = document.getElementById('modal-textarea').value.trim();
+                if (!content) {
+                    showToast("Área vacía", "Escriban sus acuerdos en el área de trabajo para poder guardar.");
+                    return; 
+                }
+                wasSaved = !!appState.deliverables[id];
+                appState.deliverables[id] = content;
+            }
+
+            // Guardar en disco duro local
+            localStorage.setItem('comfamiliarServicioCliente', JSON.stringify(appState));
+            renderTimeline(); 
+            updateUIState(); 
+
+            // Cargar y mostrar dinámica visualmente
+            const session = sessionsData.find(s => s.id === id);
+            const dynamicToUse = session.dinamicas[appState.assignedDynamics[id]];
+            const dynamicContainer = document.getElementById('dynamic-container');
+            
+            dynamicContainer.innerHTML = `
+                <div id="dynamic-box" class="bg-orange-100 p-5 rounded-xl border-4 border-brand-orange mb-5 shadow-lg pop-in">
+                    <strong class="text-brand-orange text-sm md:text-base block uppercase tracking-wide mb-2"><i class="fa-solid fa-gift text-2xl"></i> ¡Reto de Equipo Desbloqueado!</strong>
+                    <span class="text-slate-800 text-sm md:text-base font-bold leading-relaxed block bg-white p-3 rounded border border-orange-200 shadow-inner">${dynamicToUse}</span>
+                </div>
+            `;
+
+            setTimeout(() => {
+                if (!wasSaved) {
+                    document.getElementById('modal-body-scroll').scrollTo({ top: 0, behavior: 'smooth' });
+                    showToast("¡Caja Fuerte Abierta!", "Revisen su Reto de Trabajo en Equipo en el cuadro naranja superior.");
+                } else {
+                    showToast("¡Actualizado!", "El avance de su equipo se guardó correctamente.");
+                }
+            }, 50);
+        }
+
+        function downloadSessionPDF() {
+            const id = parseInt(document.getElementById('modal-session-id-main').value, 10);
+            const session = sessionsData.find(s => s.id === id);
+            
+            // Ya no es obligatorio el nombre del equipo
+            let teamName = document.getElementById('team-name').value.trim();
+            if (!teamName) {
+                teamName = "Equipo no especificado";
+            }
+
+            document.getElementById('pdf-team-name').innerText = teamName;
+            document.getElementById('pdf-date').innerText = new Date().toLocaleDateString('es-CO');
+            document.getElementById('pdf-eje').innerText = session.eje;
+            document.getElementById('pdf-title').innerText = session.title;
+            document.getElementById('pdf-entregable-title').innerText = session.entregable;
+            
+            const pdfContent = document.getElementById('pdf-content');
+
+            // --- REGLAS ESTRICTAS PARA PREVENIR EL DESBORDE Y JUSTIFICAR EL TEXTO EN PDF ---
+            if (id === 1) {
+                const em = appState.empathyMapData || {};
+                
+                // Forzamos el ancho de cada celda a 50%, y usamos word-break para no desbordar. 
+                // Añadido text-align: justify para que el texto luzca alineado y profesional.
+                const tdStyle = "width: 50%; box-sizing: border-box; border: 1px solid #666; padding: 12px; vertical-align: top; overflow: hidden;";
+                const titleStyle = "display: block; text-align: center; color: #333; font-size: 14px; margin-bottom: 8px; font-weight: bold;";
+                const boxStyle = (bgColor) => `background-color: ${bgColor}; padding: 12px; font-size: 13px; color: #111; min-height: 85px; border-radius: 4px; box-sizing: border-box; width: 100%; word-break: break-word; overflow-wrap: break-word; white-space: normal; text-align: justify;`;
+                
+                const safeText = (text) => text ? text.replace(/\n/g, '<br>') : '';
+
+                pdfContent.innerHTML = `
+                    <div style="font-family: Arial, sans-serif; width: 100%; box-sizing: border-box;">
+                        <h3 style="text-align: center; font-size: 18px; font-style: italic; color: #333; margin-bottom: 15px;">Mapa de Empatía</h3>
+                        
+                        <table style="width: 100%; max-width: 100%; box-sizing: border-box; border-collapse: collapse; table-layout: fixed;">
+                            <tr>
+                                <td style="${tdStyle}">
+                                    <span style="${titleStyle}">ESCUCHA</span>
+                                    <div style="${boxStyle('#bbf7d0')}">${safeText(em.escucha)}</div>
+                                </td>
+                                <td style="${tdStyle}">
+                                    <span style="${titleStyle}">VE</span>
+                                    <div style="${boxStyle('#bfdbfe')}">${safeText(em.ve)}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="${tdStyle}">
+                                    <span style="${titleStyle}">DICE Y HACE</span>
+                                    <div style="${boxStyle('#fef08a')}">${safeText(em.dice)}</div>
+                                </td>
+                                <td style="${tdStyle}">
+                                    <span style="${titleStyle}">PIENSA Y SIENTE</span>
+                                    <div style="${boxStyle('#e9d5ff')}">${safeText(em.piensa)}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="${tdStyle}">
+                                    <span style="${titleStyle}">DOLORES</span>
+                                    <div style="${boxStyle('#fecaca')}">${safeText(em.dolores)}</div>
+                                </td>
+                                <td style="${tdStyle}">
+                                    <span style="${titleStyle}">GANANCIAS</span>
+                                    <div style="${boxStyle('#fed7aa')}">${safeText(em.ganancias)}</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+            } else {
+                const content = document.getElementById('modal-textarea').value.trim();
+                // Justificamos y blindamos el texto de las otras sesiones
+                pdfContent.innerHTML = `<div style="text-align: justify; word-break: break-word; overflow-wrap: break-word; white-space: normal;">${content.replace(/\n/g, '<br>')}</div>`; 
+            }
+
+            const element = document.getElementById('pdf-export-container');
+            const opt = {
+                margin:       [0.5, 0.5, 0.5, 0.5], 
+                filename:     `Equipo_${teamName.replace(/\s+/g, '_')}_${session.entregable.replace(/[^a-z0-9]/gi, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+                enableLinks:  true
+            };
+
+            const btn = document.getElementById('btn-download-pdf');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando PDF...';
+            btn.disabled = true;
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+
+                appState.pdfsDownloaded[id] = true;
+                localStorage.setItem('comfamiliarServicioCliente', JSON.stringify(appState));
+                
+                renderTimeline();
+                updateProgress();
+
+                showToast("¡Descarga Completa!", "El PDF ha sido generado y debe verse perfecto.");
+                setTimeout(closeModal, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
