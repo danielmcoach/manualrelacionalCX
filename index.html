@@ -187,7 +187,8 @@
             </div>
             <div class="p-6 bg-slate-50">
                 <p class="text-sm text-slate-600 mb-4 font-medium">Ingresa el PIN de 4 dígitos para acceder a esta sesión:</p>
-                <input type="password" id="pin-input" maxlength="4" pattern="\d*" class="w-full text-center text-4xl font-black tracking-[0.5em] p-4 rounded-xl border-2 border-slate-300 shadow-inner focus:border-brand-blue focus:ring-0 outline-none transition-colors bg-white text-slate-800" placeholder="••••">
+                <!-- CAMBIO CLAVE AQUÍ: input type="tel" y autocomplete="off" para evitar problemas en GitHub con los gestores de contraseñas -->
+                <input type="tel" id="pin-input" maxlength="4" pattern="\d*" autocomplete="off" class="w-full text-center text-4xl font-black tracking-[0.5em] p-4 rounded-xl border-2 border-slate-300 shadow-inner focus:border-brand-blue focus:ring-0 outline-none transition-colors bg-white text-slate-800" placeholder="••••">
                 <p id="pin-error" class="text-red-500 text-xs font-bold mt-2 hidden">¡Clave incorrecta! Intenta de nuevo.</p>
             </div>
             <div class="p-4 bg-white border-t border-slate-200 flex gap-2">
@@ -575,7 +576,7 @@
             const enteredPin = document.getElementById('pin-input').value.trim();
             const session = sessionsData.find(s => s.id === id);
 
-            if (enteredPin === session.pin) {
+            if (String(enteredPin) === String(session.pin)) {
                 appState.unlockedSessions[id] = true;
                 localStorage.setItem('comfamiliarServicioCliente', JSON.stringify(appState));
                 closePinModal();
@@ -593,7 +594,10 @@
         }
 
         document.getElementById('pin-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') { verifyPin(); }
+            if (e.key === 'Enter') { 
+                e.preventDefault();
+                verifyPin(); 
+            }
         });
 
 
